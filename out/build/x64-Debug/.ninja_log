@@ -1,0 +1,5 @@
+# ninja log v5
+6	265	7674848836739035	CMakeFiles/MerkleTreeDemo.dir/main.cpp.obj	220c62857cc6e297
+1	147	7674849523407023	CMakeFiles/MerkleTreeLib.dir/MerkleTree.cpp.obj	a1d580a85bb577a
+148	191	7674849523834218	MerkleTreeLib.lib	2c6801f2e449aabe
+191	447	7674849526286485	MerkleTreeDemo.exe	5b54d04209415776

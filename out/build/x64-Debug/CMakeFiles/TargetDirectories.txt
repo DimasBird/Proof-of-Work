@@ -1,0 +1,4 @@
+D:/Program Files (x86)/git/Proof-of-Work/out/build/x64-Debug/CMakeFiles/MerkleTreeLib.dir
+D:/Program Files (x86)/git/Proof-of-Work/out/build/x64-Debug/CMakeFiles/MerkleTreeDemo.dir
+D:/Program Files (x86)/git/Proof-of-Work/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+D:/Program Files (x86)/git/Proof-of-Work/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
