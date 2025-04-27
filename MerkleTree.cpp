@@ -83,6 +83,7 @@ int MerkleTree::CountHash()
     return Root->HashValue;
 }
 
+// TO DO
 bool MerkleTree::CheckHash()
 {
     return true;
