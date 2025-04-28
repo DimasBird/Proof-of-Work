@@ -17,9 +17,15 @@ int main()
 
     ptr = root->Right;
     ptr->AddLeft(new Node(5));
+
     ptr->AddRight(new Node(7));
 
-    std::cout << tree->CountHash();     // Возвращает сумму на нижнем ярусе
+    std::cout << "Check hash: " << tree->CheckHash() << "\n";
+
+    std::cout << "Count hash: " << tree->CountHash() << "\n"; // Возвращает сумму на нижнем ярусе
+
+    std::cout << "Check hash: " << tree->CheckHash() << "\n";
+
     delete tree;
 
     return 0;

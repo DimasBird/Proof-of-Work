@@ -11,6 +11,7 @@ class Node
         Node* AddLeft(Node* node);
         Node* AddRight(Node* node);
         int CountSumm();
+        bool CheckSumm();
 
 
     Node(int hash);

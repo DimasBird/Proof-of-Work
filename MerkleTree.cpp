@@ -56,13 +56,36 @@ int Node::CountSumm()
 
     else if (Left == nullptr | Right == nullptr)
     {
-        if (Left) return Left->CountSumm();
-        else return Right->CountSumm();
+        if (Left)
+            return this->HashValue = Left->CountSumm();
+        else
+            return this->HashValue = Right->CountSumm();
     }
 
     else
     {
-        return Left->CountSumm() + Right->CountSumm();
+        return this->HashValue = Left->CountSumm() + Right->CountSumm();
+    }
+}
+
+bool Node::CheckSumm()
+{
+    if (Left == nullptr & Right == nullptr)
+    {
+        return true; // Совпадает сам с собой
+    }
+
+    else if (Left == nullptr | Right == nullptr)
+    {
+        if (Left)
+            return Left->CheckSumm();
+        if (Right)
+            return Right->CheckSumm();
+    }
+
+    else
+    {
+        return Left->CheckSumm() & Right->CheckSumm() && (Left->HashValue + Right->HashValue == this->HashValue);
     }
 }
 
@@ -83,8 +106,7 @@ int MerkleTree::CountHash()
     return Root->HashValue;
 }
 
-// TO DO
 bool MerkleTree::CheckHash()
 {
-    return true;
+    return Root->CheckSumm();
 }
