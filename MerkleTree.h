@@ -1,5 +1,4 @@
-#ifndef MERKLETREE_H
-#define MERKLETREE_H
+#pragma once
 
 class Node
 {
@@ -33,5 +32,3 @@ class MerkleTree
     MerkleTree();
     ~MerkleTree();
 };
-
-#endif

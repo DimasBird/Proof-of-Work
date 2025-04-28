@@ -1,3 +1,4 @@
+#pragma once
 #include "MerkleTree.h"
 
 Node::Node(int hash)

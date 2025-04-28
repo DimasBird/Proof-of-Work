@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include "MerkleTree.h"
 
@@ -8,7 +9,7 @@ int main()
     Node* root = tree->Root;
 
     Node* ptr = root;
-
+    
     root->AddLeft(new Node(10));
     root->AddRight(new Node(20));
 
@@ -25,8 +26,6 @@ int main()
     std::cout << "Count hash: " << tree->CountHash() << "\n"; // Возвращает сумму на нижнем ярусе
 
     std::cout << "Check hash: " << tree->CheckHash() << "\n";
-
-    delete tree;
-
+    delete tree;   
     return 0;
 }
