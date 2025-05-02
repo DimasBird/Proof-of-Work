@@ -38,9 +38,8 @@ A = np.array([
     ["07e095624504536c", "8d70c431ac02a736", "c83862965601dd1b", "641c314b2b8ee083"]
 ])
 
-A_bin = np.array([[[int(bit) for bit in f"{int(x, 16):064b}"] for x in row] for row in A], dtype=int)
-
-A_GF = galois.GF(2)(A_bin)
+A_bin = np.array([[[int(bit) for bit in f"{int(x, 16):064b}"] for x in row] for row in A])
+A_GF = GF(A_bin.reshape(16, 4, 64))  # Правильная размерность 16x4x64
 
 c1 = int(
     "b1085bda1ecadae9ebcb2f18c0567f1f26a7642e45d016714eb88d75854cfc4c7b2e09192676901a2422a08a460d31505767436cc744d23dd806559f2a64507",
@@ -49,7 +48,7 @@ c2 = int(
     "6fa3b58aa99d2f14afe39d460f70b5d7f3feea720a232b986d155ef0f16b501319ab5176b12d699585bc561c2d0ba7ca55dda21bd7cbcd56e679047021b19bb7",
     16)
 c3 = int(
-    "f574dcac2bce2fc70a39fc286a3d843506f15ef5529c1f8bf2ea7541b219b7b7bd3e20fe490359eb1c1c93a376062db09c2b6f4438672db31991e96f50abaa0b2",
+    "f574dcac2bce2fc70a39fc286a3d843506f15e5f529c1f8bf2ea751461297b7bd3e20fe490359eb1c1C93a376062db09c2b6f443867adb31991e96f50aba0ab2",
     16)
 c4 = int(
     "eff1fdfb3e8156cd2f948e1a05d71e4dd488e857e335c7c3d9d721cad685e353fad927c28ed3067d58b7133395230be3453eaa193e8371f220cbec84e3d12e",
@@ -58,10 +57,10 @@ c5 = int(
     "4bea6abca4d747999a3f4106cca923637f151c1f1686104a359e35d7800fffbd8bfcd1747253af53d40ff0b723271a167a56a27ea9ea63f5601758fd7c6cfe57",
     16)
 c6 = int(
-    "ae4faaee1d3ad3d96fa4c33b7a30390c2d66caf95142a46c187f9ab49af08ec6cffaa6b71c9ab7b04a2f1f66c2bec6bbf71c572369094f35f8a6047a46647d6e",
+    "ae4faeae1d3ad3d96fa4c33b7a3039c02d66c4f95142a46c187f9ab49af08ec6Cffaa6b71c9ab7b40af21f66c2bec6b6bf71c57236904f35fa68407a46647d6e",
     16)
 c7 = int(
-    "f4c70de1eaeaa5ce51ac86febf2409543996ec67e6bf87c9d3473e33197a93c90992abc52d822c3706476983284a05043517454c2a23c4af38886564ad3a14d493",
+    "f4c70e16eeaac5ec51ac86febf240954399ec6c7e6bf87c9d3473e33197a93c90992abc52d822c3706476983284a05043517454ca23c4af38886564d3a14d493",
     16)
 c8 = int(
     "91bff1b5c81dc3a9703e7aa002e64f141eb787179c36d1e8e9b443b4dbd409af4892bcb929b069069d18d2bd1a5c42f36acc2355951a8d9a47f0dd4bf02e71e",
@@ -112,6 +111,14 @@ class Hash2018:
 
     @staticmethod
     def X_transform(k, a):
+        # Преобразуем входные данные в массивы np.uint8
+        k = np.array(k, dtype=np.uint8)
+        a = np.array(a, dtype=np.uint8)
+
+        # Проверка длины
+        if k.shape != (64,) or a.shape != (64,):
+            raise ValueError(f"Invalid input shapes: k={k.shape}, a={a.shape}")
+
         return k ^ a
 
     @staticmethod
@@ -125,18 +132,36 @@ class Hash2018:
     @staticmethod
     def L_transform(s):
         assert len(s) == 64
-        result = []
-        for i in range(8):
-            block = s[i * 8:(i + 1) * 8]  # 8 байт
-            val = np.zeros(64, dtype=int)
-            for j in range(64):
-                bit = (block[j // 8] >> (7 - (j % 8))) & 1
-                if bit:
-                    val ^= A_GF[j // 4][j % 4]  # val — вектор из 64 бит
-            # Преобразуем 64-битный вектор в одно число
-            int_val = int("".join(str(b) for b in val), 2)
-            result.extend(int_val.to_bytes(8, "big"))
-        return list(result)
+        # Преобразуем 64 байта в 512 бит
+        bits = GF(np.unpackbits(np.array(s, dtype=np.uint8)))
+
+        # Результат — вектор из 512 бит
+        result_bits = GF.Zeros(512)
+
+        # Выполняем умножение матрицы A на вектор битов
+        for i in range(16):  # 16 блоков
+            for j in range(4):  # 4 столбца в каждом блоке
+                for k in range(64):  # 64 бита в каждом столбце
+                    result_bits[i * 32 + j * 8 + k // 8] += A_GF[i, j, k] * bits[j * 128 + k]
+
+        # Преобразуем result_bits в массив NumPy перед вызовом packbits
+        result_bits_np = result_bits.view(np.ndarray)
+        result_bytes = np.packbits(result_bits_np).tolist()
+
+        # Проверяем длину результата
+        if len(result_bytes) != 64:
+            raise ValueError(f"Invalid L_transform output length: {len(result_bytes)}")
+
+        return result_bytes
+    @staticmethod
+    def pad_data(data):
+        """Дополняет данные до размера, кратного 64 байтам"""
+        if len(data) % 64 != 0:
+            pad_len = 64 - (len(data) % 64)
+            # Добавляем 1 и затем нули
+            padded = data + b'\x01' + bytes([0] * (pad_len - 1))
+            return padded
+        return data
 
     @staticmethod
     def forward(data):
@@ -147,94 +172,103 @@ class Hash2018:
 
     @staticmethod
     def E(K, m):
-        # assert len(K) == 64 and len(m) == 64
-        Ki = K[:]  # создаем копию K
-        state = Hash2018.X_transform(np.array(Ki, dtype=np.uint8),
-                                     np.array(m, dtype=np.uint8))  # преобразуем в массивы чисел
+        if len(K) != 64 or len(m) != 64:
+            raise ValueError(f"Invalid input lengths: K={len(K)}, m={len(m)}")
 
-        # 12 раундов
+        Ki = np.array(K, dtype=np.uint8)
+        state = Hash2018.X_transform(Ki, np.array(m, dtype=np.uint8))
+
         for i in range(12):
-            # S, P, L
-            state = Hash2018.forward(state)
+            state = np.array(Hash2018.forward(state.tolist()), dtype=np.uint8)
+            if state.shape != (64,):
+                raise ValueError(f"Invalid state shape after forward: {state.shape}")
 
-            # K_i+1 = LPS(K_i xor C_i)
-            c_bytes = c[i].to_bytes(64, 'big')  # C_i как байтовая строка
-            Ki = Hash2018.X_transform(np.array(Ki, dtype=np.uint8),
-                                      np.array(c_bytes, dtype=np.uint8))  # преобразуем в массивы
-            Ki = Hash2018.forward(Ki)
+            c_bytes = c[i].to_bytes(64, 'big')
+            c_array = np.frombuffer(c_bytes, dtype=np.uint8)
+            Ki = Hash2018.X_transform(Ki, c_array)
+            Ki = np.array(Hash2018.forward(Ki.tolist()), dtype=np.uint8)
+            if Ki.shape != (64,):
+                raise ValueError(f"Invalid Ki shape after forward: {Ki.shape}")
 
-            # X: state = state xor K_{i+1}
-            state = Hash2018.X_transform(np.array(state, dtype=np.uint8),
-                                         np.array(Ki, dtype=np.uint8))  # преобразуем в массивы
+            state = Hash2018.X_transform(state, Ki)
 
-        return state
+        return state.tolist()
 
     @staticmethod
     def gN(h, m, N):
-        #assert len(h) == 64 and len(m) == 64 and len(N) == 64
-
-        # K = LPS(h ⊕ N)
-        k = Hash2018.X_transform(np.array(h, dtype=np.uint8), np.array(N, dtype=np.uint8)).tolist()
-        k = Hash2018.forward(k)
-
-        # E(K, m)
-        e = Hash2018.E(k, m)
-
-        # gN = e xor h xor m
-        e = np.array(e, dtype=np.uint8)
+        # Преобразуем входные данные в массивы np.uint8
         h = np.array(h, dtype=np.uint8)
         m = np.array(m, dtype=np.uint8)
+        N = np.array(N, dtype=np.uint8)
+
+        # Проверяем длины
+        if h.shape != (64,) or m.shape != (64,) or N.shape != (64,):
+            raise ValueError(f"Invalid input shapes: h={h.shape}, m={m.shape}, N={N.shape}")
+
+        # K = LPS(h ⊕ N)
+        k = Hash2018.X_transform(h, N)
+        k = np.array(Hash2018.forward(k.tolist()), dtype=np.uint8)
+
+        # E(K, m)
+        e = np.array(Hash2018.E(k.tolist(), m.tolist()), dtype=np.uint8)
+
+        # gN = e xor h xor m
         result = Hash2018.X_transform(Hash2018.X_transform(e, h), m)
 
         return result.tolist()
 
     @staticmethod
-    def hash(data: bytes) -> list[int]:
+    def hash(data: bytes, is256: bool = True) -> list[int]:
         # Начальные значения
-        h = [1] * 64  # или [0x01]*64 — начальное значение хэша
-        N = [0] * 64  # счётчик длины сообщений в битах
-        e = [0] * 64  # сумма всех сообщений
+        h = [1] * 64 if is256 else [0] * 64  # IV: 0x01*64 для 256 бит, 0x00*64 для 512 бит
+        N = [0] * 64  # Счётчик длины сообщений в битах
+        e = [0] * 64  # Сумма всех сообщений
 
-        # Разбивка на 512-битные (64-байтные) блоки
-        blocks = [data[i:i + 64] for i in range(0, len(data), 64)]
-        last_block = blocks[-1] if len(blocks[-1]) == 64 else None
-        if last_block and len(last_block) < 64:
-            blocks = blocks[:-1]
+        # Дополняем данные
+        padded_data = Hash2018.pad_data(data)
+
+        # Разбивка на 64-байтные блоки
+        blocks = [padded_data[i:i + 64] for i in range(0, len(padded_data), 64)]
 
         for block in blocks:
             m = list(block)
+            if len(m) != 64:
+                raise ValueError(f"Invalid block length: {len(m)}")
+
             # gN step
             h = Hash2018.gN(h, m, N)
-            # N = (N + len(m)*8) % 2^512
-            N = Hash2018.add_mod512(N, [0] * 63 + [len(m) * 8])
-            # e = (e + m) % 2^512
-            e = Hash2018.add_mod512(e, list(m))
 
-        # Обработка последнего блока
-        remaining = len(data) % 64
-        if remaining > 0:
-            pad = [0] * (64 - remaining)
-            m = list(data[-remaining:]) + pad
-            h = Hash2018.gN(h, m, N)
-            N = Hash2018.add_mod512(N, [0] * 63 + [remaining * 8])
+            # N = (N + len(m)*8) % 2^512
+            block_length_bits = len(m) * 8
+            length_bytes = block_length_bits.to_bytes(64, byteorder='little')
+            length_list = list(length_bytes)
+            N = Hash2018.add_mod512(N, length_list)
+
+            # e = (e + m) % 2^512
             e = Hash2018.add_mod512(e, m)
 
         # Финальные преобразования
         h = Hash2018.gN(h, N, [0] * 64)
         h = Hash2018.gN(h, e, [0] * 64)
 
-        return h
+        return h[:32] if is256 else h  # Возвращаем 32 байта для 256-битного хэша или 64 для 512-битного
 
     @staticmethod
     def add_mod512(a: list[int], b: list[int]) -> list[int]:
-        assert len(a) == 64 and len(b) == 64
+        assert len(a) == 64 and len(b) == 64, f"Invalid lengths: len(a)={len(a)}, len(b)={len(b)}"
         result = [0] * 64
         carry = 0
 
         for i in reversed(range(64)):
             temp = a[i] + b[i] + carry
-            result[i] = temp & 0xFF  # оставляем младший байт
-            carry = temp >> 8  # перенос в следующий байт
+            result[i] = temp & 0xFF  # Оставляем младший байт
+            carry = temp >> 8  # Перенос в следующий байт
 
         return result
-
+"""
+Для проверки размерности c1-c12
+for i, const in enumerate(c):
+    hex_str = hex(const)[2:].zfill(128)  # Убираем '0x' и добавляем ведущие нули
+    print(f"c[{i}]: length={len(hex_str)}, value={hex_str[:20]}...")
+    assert len(hex_str) == 128, f"Invalid length for c[{i}]: {len(hex_str)}"
+"""
