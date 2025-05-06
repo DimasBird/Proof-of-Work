@@ -1,7 +1,12 @@
+import hash_function as hsh
+
 class Leaf:
-    def __init__(self, hash_value, parent=None, left=None, right=None):
+    def __init__(self, value, parent=None, left=None, right=None, use_hash=True):
         super(Leaf, self).__init__()
-        self.HashValue = hash_value
+        if use_hash:
+            self.HashValue = hsh.Hash2018.hash(value)
+        else:
+            self.HashValue = value
         self.Left = parent
         self.Right = right
         self.Parent = left
@@ -17,7 +22,7 @@ class Leaf:
             if self.Right is not None: return self.Right.count_summ()
 
         else:
-            return self.Left.count_summ() + self.Right.count_summ()
+            return hsh.Hash2018.hash(self.Left.count_summ() + self.Right.count_summ())
 
     # Тут надо не складывать хэши, а находить хэш от конкатенации хэшей детей
     # TO DO
@@ -56,11 +61,11 @@ class Leaf:
 
 
 class MerkleTree:
-    def __init__(self, leaf):
+    def __init__(self, leaf=None):
         super(MerkleTree, self).__init__()
 
         if leaf is None:
-            self.Root = Leaf(0)
+            self.Root = Leaf(0, use_hash=False)
         else:
             self.root = leaf
 

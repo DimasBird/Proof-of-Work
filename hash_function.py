@@ -1,274 +1,137 @@
-import numpy as np
-import galois
+from copy import deepcopy
 
-GF = galois.GF(2)
+# --- Константы ГОСТ ---
 
-pi = (252, 238, 221, 17, 207, 110, 49, 22, 251, 196, 250, 218, 35, 197, 4, 77, 233, 119, 240, 219, 147,
-      46, 153, 186, 23, 54, 241, 187, 20, 205, 95, 193, 249, 24, 101, 90, 226, 92, 239, 33, 129, 28, 60, 66, 139, 1,
-      142, 79, 5, 132, 2, 174, 227, 106, 143, 160, 6, 11, 237, 152, 127, 212, 211, 31, 235, 52, 44, 81, 234, 200, 72,
-      171, 242, 42, 104, 162, 253, 58, 206, 204, 181, 112, 14, 86, 8, 12, 118, 18, 191, 114, 19, 71, 156, 183, 93, 135,
-      21, 161, 150, 41, 16, 123, 154, 199, 243, 145, 120, 111, 157, 158, 178, 177, 50, 117, 25, 61, 255, 53, 138, 126,
-      109, 84, 198, 128, 195, 189, 13, 87, 223, 245, 36, 169, 62, 168, 67, 201, 215, 121, 214, 246, 124, 34, 185, 3,
-      224, 15, 236, 222, 122, 148, 176, 188, 220, 232, 40, 80, 78, 51, 10, 74, 167, 151, 96, 115, 30, 0, 98, 68, 26,
-      184, 56, 130, 100, 159, 38, 65, 173, 69, 70, 146, 39, 94, 85, 47, 140, 163, 165, 125, 105, 213, 149, 59, 7, 88,
-      179, 64, 134, 172, 29, 247, 48, 55, 107, 228, 136, 217, 231, 137, 225, 27, 131, 73, 76, 63, 248, 254, 141, 83,
-      170, 144, 202, 216, 133, 97, 32, 113, 103, 164, 45, 43, 9, 91, 203, 155, 37, 208, 190, 229, 108, 82, 89, 166,
-      116, 210, 230, 244, 180, 192, 209, 102, 175, 194, 57, 75, 99, 182)
+PI = [
+    0xFC, 0xEE, 0xDD, 0x11, 0xCF, 0x6E, 0x31, 0x16, 0xFB, 0xC4, 0xFA, 0xDA, 0x23, 0xC5, 0x04, 0x4D,
+    0xE9, 0x77, 0xF0, 0xDB, 0x93, 0x2E, 0x99, 0xBA, 0x17, 0x36, 0xF1, 0xBB, 0x14, 0xCD, 0x5F, 0xC1,
+    0xF9, 0x18, 0x65, 0x5A, 0xE2, 0x5C, 0xEF, 0x21, 0x81, 0x1C, 0x3C, 0x42, 0x8B, 0x01, 0x8E, 0x4F,
+    0x05, 0x84, 0x02, 0xAE, 0xE3, 0x6A, 0x8F, 0xA0, 0x06, 0x0B, 0xED, 0x98, 0x7F, 0xD4, 0xD3, 0x1F,
+    0xEB, 0x34, 0x2C, 0x51, 0xEA, 0xC8, 0x48, 0xAB, 0xF2, 0x2A, 0x68, 0xA2, 0xFD, 0x3A, 0xCE, 0xCC,
+    0xB5, 0x70, 0x0E, 0x56, 0x08, 0x0C, 0x76, 0x12, 0xBF, 0x72, 0x13, 0x47, 0x9C, 0xB7, 0x5D, 0x87,
+    0x15, 0xA1, 0x96, 0x29, 0x10, 0x7B, 0x9A, 0xC7, 0xF3, 0x91, 0x78, 0x6F, 0x9D, 0x9E, 0xB2, 0xB1,
+    0x32, 0x75, 0x19, 0x3D, 0xFF, 0x35, 0x8A, 0x7E, 0x6D, 0x54, 0xC6, 0x80, 0xC3, 0xBD, 0x0D, 0x57,
+    0xDF, 0xF5, 0x24, 0xA9, 0x3E, 0xA8, 0x43, 0xC9, 0xD7, 0x79, 0xD6, 0xF6, 0x7C, 0x22, 0xB9, 0x03,
+    0xE0, 0x0F, 0xEC, 0xDE, 0x7A, 0x94, 0xB0, 0xBC, 0xDC, 0xE8, 0x28, 0x50, 0x4E, 0x33, 0x0A, 0x4A,
+    0xA7, 0x97, 0x60, 0x73, 0x1E, 0x00, 0x62, 0x44, 0x1A, 0xB8, 0x38, 0x82, 0x64, 0x9F, 0x26, 0x41,
+    0xAD, 0x45, 0x46, 0x92, 0x27, 0x5E, 0x55, 0x2F, 0x8C, 0xA3, 0xA5, 0x7D, 0x69, 0xD5, 0x95, 0x3B,
+    0x07, 0x58, 0xB3, 0x40, 0x86, 0xAC, 0x1D, 0xF7, 0x30, 0x37, 0x6B, 0xE4, 0x88, 0xD9, 0xE7, 0x89,
+    0xE1, 0x1B, 0x83, 0x49, 0x4C, 0x3F, 0xF8, 0xFE, 0x8D, 0x53, 0xAA, 0x90, 0xCA, 0xD8, 0x85, 0x61,
+    0x20, 0x71, 0x67, 0xA4, 0x2D, 0x2B, 0x09, 0x5B, 0xCB, 0x9B, 0x25, 0xD0, 0xBE, 0xE5, 0x6C, 0x52,
+    0x59, 0xA6, 0x74, 0xD2, 0xE6, 0xF4, 0xB4, 0xC0, 0xD1, 0x66, 0xAF, 0xC2, 0x39, 0x4B, 0x63, 0xB6
+]
 
-tau = (0, 8, 16, 24, 32, 40, 48, 56, 1, 9, 17, 25, 33, 41, 49, 57, 2, 10, 18, 26, 34, 42, 50, 58, 3, 11, 19, 27, 35,
-       43, 51, 59, 4, 12, 20, 28, 36, 44, 52, 60, 5, 13, 21, 29, 37, 45, 53, 61, 6, 14, 22, 30, 38, 46, 54, 62, 7,
-       15, 23, 31, 39, 47, 55, 63)
+TAU = [
+    0, 8, 16, 24, 32, 40, 48, 56,
+    1, 9, 17, 25, 33, 41, 49, 57,
+    2, 10, 18, 26, 34, 42, 50, 58,
+    3, 11, 19, 27, 35, 43, 51, 59,
+    4, 12, 20, 28, 36, 44, 52, 60,
+    5, 13, 21, 29, 37, 45, 53, 61,
+    6, 14, 22, 30, 38, 46, 54, 62,
+    7, 15, 23, 31, 39, 47, 55, 63
+]
 
-A = np.array([
-    ["8e20faa72ba0b470", "47107ddd9b505a38", "ad08b0e0c3282d1c", "d8045870ef14980e"],
-    ["6c022c38f90a4c07", "3601161cf205268d", "1b8e0b0e798c13c8", "83478b07b2468764"],
-    ["a011d380818e8f40", "5086e740ce47c920", "2843fd2067adea10", "14aff010bdd87508"],
-    ["0ad97808d06cb404", "05e23c0468365a02", "8c711e02341b2d01", "46b60f011a83988e"],
-    ["90dab52a387ae76f", "486dd4151c3dfdb9", "24b86a840e90f0d2", "125C354207487869"],
-    ["092e94218d243cba", "8a174a9ec8121e5d", "4585254f64090fa0", "accc9ca9328a8950"],
-    ["9d4df05d5f661451", "C0a878a0a1330aa6", "60543c50de970553", "302a1e286fc58ca7"],
-    ["18150f14b9ec46dd", "0c84890ad27623e0", "0642ca05693b9f70", "0321658cba93c138"],
-    ["86275df09ce8aaa8", "439da0784e745554", "afc0503c273aa42a", "d960281e9d1d5215"],
-    ["e230140fc0802984", "71180a8960409a42", "b60c05ca30204d21", "5b068c651810a89e"],
-    ["456c34887a3805b9", "ac361a443d1c8cd2", "561b0d22900e4669", "2b838811480723ba"],
-    ["9bcf4486248d9f5d", "c3e9224312c8c1a0", "effa11af0964ee50", "f97d86d98a327728"],
-    ["e4fa2054a80b329c", "727d102a548b194e", "39b008152acb8227", "9258048415eb419d"],
-    ["492c024284fbaec0", "aa16012142f35760", "550b8e9e21f7a530", "a48b474f9ef5dc18"],
-    ["70a6a56e2440598e", "3853dc371220a247", "1ca76e95091051ad", "0edd37c48a08a6d8"],
-    ["07e095624504536c", "8d70c431ac02a736", "c83862965601dd1b", "641c314b2b8ee083"]
-])
+# Преобразование L: предрассчитанные 64 вектора
+A_MATRIX = [
+    int(x, 16).to_bytes(8, 'big') for x in [
+        "8e20faa72ba0b470", "47107ddd9b505a38", "ad08b0e0c3282d1c", "d8045870ef14980e",
+        "6c022c38f90a4c07", "3601161cf205268d", "1b8e0b0e798c13c8", "83478b07b2468764",
+        "a011d380818e8f40", "5086e740ce47c920", "2843fd2067adea10", "14aff010bdd87508",
+        "0ad97808d06cb404", "05e23c0468365a02", "8c711e02341b2d01", "46b60f011a83988e",
+        "90dab52a387ae76f", "486dd4151c3dfdb9", "24b86a840e90f0d2", "125c354207487869",
+        "092e94218d243cba", "8a174a9ec8121e5d", "4585254f64090fa0", "accc9ca9328a8950",
+        "9d4df05d5f661451", "c0a878a0a1330aa6", "60543c50de970553", "302a1e286fc58ca7",
+        "18150f14b9ec46dd", "0c84890ad27623e0", "0642ca05693b9f70", "0321658cba93c138",
+        "86275df09ce8aaa8", "439da0784e745554", "afc0503c273aa42a", "d960281e9d1d5215",
+        "e230140fc0802984", "71180a8960409a42", "b60c05ca30204d21", "5b068c651810a89e",
+        "456c34887a3805b9", "ac361a443d1c8cd2", "561b0d22900e4669", "2b838811480723ba",
+        "9bcf4486248d9f5d", "c3e9224312c8c1a0", "effa11af0964ee50", "f97d86d98a327728",
+        "e4fa2054a80b329c", "727d102a548b194e", "39b008152acb8227", "9258048415eb419d",
+        "492c024284fbaec0", "aa16012142f35760", "550b8e9e21f7a530", "a48b474f9ef5dc18",
+        "70a6a56e2440598e", "3853dc371220a247", "1ca76e95091051ad", "0edd37c48a08a6d8",
+        "07e095624504536c", "8d70c431ac02a736", "c83862965601dd1b", "641c314b2b8ee083"
+    ]
+]
 
-A_bin = np.array([[[int(bit) for bit in f"{int(x, 16):064b}"] for x in row] for row in A])
-A_GF = GF(A_bin.reshape(16, 4, 64))  # Правильная размерность 16x4x64
+def xor(a, b):
+    return bytes(x ^ y for x, y in zip(a, b))
 
-c1 = int(
-    "b1085bda1ecadae9ebcb2f18c0567f1f26a7642e45d016714eb88d75854cfc4c7b2e09192676901a2422a08a460d31505767436cc744d23dd806559f2a64507",
-    16)
-c2 = int(
-    "6fa3b58aa99d2f14afe39d460f70b5d7f3feea720a232b986d155ef0f16b501319ab5176b12d699585bc561c2d0ba7ca55dda21bd7cbcd56e679047021b19bb7",
-    16)
-c3 = int(
-    "f574dcac2bce2fc70a39fc286a3d843506f15e5f529c1f8bf2ea751461297b7bd3e20fe490359eb1c1C93a376062db09c2b6f443867adb31991e96f50aba0ab2",
-    16)
-c4 = int(
-    "eff1fdfb3e8156cd2f948e1a05d71e4dd488e857e335c7c3d9d721cad685e353fad927c28ed3067d58b7133395230be3453eaa193e8371f220cbec84e3d12e",
-    16)
-c5 = int(
-    "4bea6abca4d747999a3f4106cca923637f151c1f1686104a359e35d7800fffbd8bfcd1747253af53d40ff0b723271a167a56a27ea9ea63f5601758fd7c6cfe57",
-    16)
-c6 = int(
-    "ae4faeae1d3ad3d96fa4c33b7a3039c02d66c4f95142a46c187f9ab49af08ec6Cffaa6b71c9ab7b40af21f66c2bec6b6bf71c57236904f35fa68407a46647d6e",
-    16)
-c7 = int(
-    "f4c70e16eeaac5ec51ac86febf240954399ec6c7e6bf87c9d3473e33197a93c90992abc52d822c3706476983284a05043517454ca23c4af38886564d3a14d493",
-    16)
-c8 = int(
-    "91bff1b5c81dc3a9703e7aa002e64f141eb787179c36d1e8e9b443b4dbd409af4892bcb929b069069d18d2bd1a5c42f36acc2355951a8d9a47f0dd4bf02e71e",
-    16)
-c9 = int(
-    "378f5a54613229b944c9ad8ec165fde3a7d3a1b258942243cd955b7e00d098480004440dbb2ceb17b2b8a9aa6079c540e38dc92cb1f2a607261445183235adb",
-    16)
-c10 = int(
-    "abbdeae68005f652382ae548b2e4f3f8941e71cff8a78db1fffe18a1b3361039fe76702af69334b7a1e6c303b7652f43698fad1153bb6c374b4c7fb98459ced",
-    16)
-c11 = int(
-    "7bcd9ed0fec889fb3002c6cd635afe94d8fa6bbbebab07612001802114846798a1d71efea48b9caefbacd1d7d476e98dea2594ac06fd856bcaa4cd81f32d1b",
-    16)
-c12 = int(
-    "378ee767f11631bad21380b00449b17acda43c2bcdf1d77f82012d43021f9fb5d80ef9d1891cc86e71da4aa88e12852faf417d5d9b21b9948bc924af11bd720",
-    16)
+def S(data):
+    return bytes(PI[b] for b in data)
 
-c = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12]
+def P(data):
+    return bytes(data[TAU[i]] for i in range(64))
 
+def L(data):
+    result = bytearray(64)
+    for i in range(8):
+        for j in range(8):
+            acc = 0
+            for k in range(8):
+                if data[i * 8 + k] & (1 << (7 - j)):
+                    acc ^= A_MATRIX[k][j]
+            result[i * 8 + j] = acc
+    return result
 
-class Hash2018:
-    def __init__(self, hash_size=256):
-        if hash_size == 256:
-            self.used256 = True
-            self.IV = "00000001" * 64
-        else:
-            self.used256 = False
-            self.IV = "0" * 512
+def LPS(data):
+    return L(P(S(data)))
 
-    @staticmethod
-    def l_transform(data):
-        # Преобразуем входной список байтов (64 байта) в вектор битов (512 бит)
-        bits = GF(np.unpackbits(np.array(data, dtype=np.uint8)))
+# Генерация C[i]
+def get_C():
+    C = []
+    for i in range(12):
+        block = bytearray(64)
+        block[0] = i + 1
+        C.append(LPS(block))
+    return C
 
-        # Результат — вектор из 512 бит
-        result_bits = GF.Zeros(512)
+C = get_C()
 
-        # Выполняем умножение матрицы A на вектор битов
-        for i in range(64):
-            acc = GF(0)
-            for j in range(64):
-                acc += A_GF[i, j] * bits[j]
-            result_bits[i] = acc
+def E(K, m):
+    state = xor(K, m)
+    for i in range(12):
+        state = LPS(state)
+        K = LPS(xor(K, C[i]))
+        state = xor(state, K)
+    return state
 
-        # Упаковываем обратно в байты
-        result_bytes = np.packbits(result_bits).tolist()
-        return result_bytes
+def g(h, N, m):
+    K = LPS(xor(h, N))
+    return xor(xor(E(K, m), h), m)
 
-    @staticmethod
-    def X_transform(k, a):
-        # Преобразуем входные данные в массивы np.uint8
-        k = np.array(k, dtype=np.uint8)
-        a = np.array(a, dtype=np.uint8)
+def add_mod512(a, b):
+    res = (int.from_bytes(a, 'big') + int.from_bytes(b, 'big')) % (1 << 512)
+    return res.to_bytes(64, 'big')
 
-        # Проверка длины
-        if k.shape != (64,) or a.shape != (64,):
-            raise ValueError(f"Invalid input shapes: k={k.shape}, a={a.shape}")
+def streebog(message: bytes, hash_size=512):
+    if hash_size == 512:
+        IV = bytes([1] * 64)
+    elif hash_size == 256:
+        IV = bytes([0] * 64)
+    else:
+        raise ValueError("hash_size must be 256 or 512")
 
-        return k ^ a
+    h = IV
+    N = b'\x00' * 64
+    Sigma = b'\x00' * 64
 
-    @staticmethod
-    def S_transform(s):
-        return [pi[byte] for byte in s]
+    blocks = [message[i:i+64] for i in range(0, len(message), 64)]
+    if len(blocks[-1]) < 64:
+        pad_len = 64 - len(blocks[-1])
+        blocks[-1] = blocks[-1] + b'\x00' * pad_len
 
-    @staticmethod
-    def P_transform(s):
-        return [s[t] for t in tau]
+    for block in blocks[:-1]:
+        h = g(h, N, block)
+        N = add_mod512(N, (512).to_bytes(64, 'big'))
+        Sigma = add_mod512(Sigma, block)
 
-    @staticmethod
-    def L_transform(s):
-        assert len(s) == 64
-        # Преобразуем 64 байта в 512 бит
-        bits = GF(np.unpackbits(np.array(s, dtype=np.uint8)))
+    last_block = blocks[-1]
+    msg_len = (len(message) * 8).to_bytes(64, 'little')
+    h = g(h, N, last_block)
+    N = add_mod512(N, msg_len)
+    Sigma = add_mod512(Sigma, last_block)
+    h = g(h, b'\x00' * 64, N)
+    h = g(h, b'\x00' * 64, Sigma)
 
-        # Результат — вектор из 512 бит
-        result_bits = GF.Zeros(512)
-
-        # Выполняем умножение матрицы A на вектор битов
-        for i in range(16):  # 16 блоков
-            for j in range(4):  # 4 столбца в каждом блоке
-                for k in range(64):  # 64 бита в каждом столбце
-                    result_bits[i * 32 + j * 8 + k // 8] += A_GF[i, j, k] * bits[j * 128 + k]
-
-        # Преобразуем result_bits в массив NumPy перед вызовом packbits
-        result_bits_np = result_bits.view(np.ndarray)
-        result_bytes = np.packbits(result_bits_np).tolist()
-
-        # Проверяем длину результата
-        if len(result_bytes) != 64:
-            raise ValueError(f"Invalid L_transform output length: {len(result_bytes)}")
-
-        return result_bytes
-    @staticmethod
-    def pad_data(data):
-        """Дополняет данные до размера, кратного 64 байтам"""
-        if len(data) % 64 != 0:
-            pad_len = 64 - (len(data) % 64)
-            # Добавляем 1 и затем нули
-            padded = data + b'\x01' + bytes([0] * (pad_len - 1))
-            return padded
-        return data
-
-    @staticmethod
-    def forward(data):
-        s = Hash2018.S_transform(data)
-        p = Hash2018.P_transform(s)
-        l = Hash2018.L_transform(p)
-        return l
-
-    @staticmethod
-    def E(K, m):
-        if len(K) != 64 or len(m) != 64:
-            raise ValueError(f"Invalid input lengths: K={len(K)}, m={len(m)}")
-
-        Ki = np.array(K, dtype=np.uint8)
-        state = Hash2018.X_transform(Ki, np.array(m, dtype=np.uint8))
-
-        for i in range(12):
-            state = np.array(Hash2018.forward(state.tolist()), dtype=np.uint8)
-            if state.shape != (64,):
-                raise ValueError(f"Invalid state shape after forward: {state.shape}")
-
-            c_bytes = c[i].to_bytes(64, 'big')
-            c_array = np.frombuffer(c_bytes, dtype=np.uint8)
-            Ki = Hash2018.X_transform(Ki, c_array)
-            Ki = np.array(Hash2018.forward(Ki.tolist()), dtype=np.uint8)
-            if Ki.shape != (64,):
-                raise ValueError(f"Invalid Ki shape after forward: {Ki.shape}")
-
-            state = Hash2018.X_transform(state, Ki)
-
-        return state.tolist()
-
-    @staticmethod
-    def gN(h, m, N):
-        # Преобразуем входные данные в массивы np.uint8
-        h = np.array(h, dtype=np.uint8)
-        m = np.array(m, dtype=np.uint8)
-        N = np.array(N, dtype=np.uint8)
-
-        # Проверяем длины
-        if h.shape != (64,) or m.shape != (64,) or N.shape != (64,):
-            raise ValueError(f"Invalid input shapes: h={h.shape}, m={m.shape}, N={N.shape}")
-
-        # K = LPS(h ⊕ N)
-        k = Hash2018.X_transform(h, N)
-        k = np.array(Hash2018.forward(k.tolist()), dtype=np.uint8)
-
-        # E(K, m)
-        e = np.array(Hash2018.E(k.tolist(), m.tolist()), dtype=np.uint8)
-
-        # gN = e xor h xor m
-        result = Hash2018.X_transform(Hash2018.X_transform(e, h), m)
-
-        return result.tolist()
-
-    @staticmethod
-    def hash(data: bytes, is256: bool = True) -> list[int]:
-        # Начальные значения
-        h = [1] * 64 if is256 else [0] * 64  # IV: 0x01*64 для 256 бит, 0x00*64 для 512 бит
-        N = [0] * 64  # Счётчик длины сообщений в битах
-        e = [0] * 64  # Сумма всех сообщений
-
-        # Дополняем данные
-        padded_data = Hash2018.pad_data(data)
-
-        # Разбивка на 64-байтные блоки
-        blocks = [padded_data[i:i + 64] for i in range(0, len(padded_data), 64)]
-
-        for block in blocks:
-            m = list(block)
-            if len(m) != 64:
-                raise ValueError(f"Invalid block length: {len(m)}")
-
-            # gN step
-            h = Hash2018.gN(h, m, N)
-
-            # N = (N + len(m)*8) % 2^512
-            block_length_bits = len(m) * 8
-            length_bytes = block_length_bits.to_bytes(64, byteorder='little')
-            length_list = list(length_bytes)
-            N = Hash2018.add_mod512(N, length_list)
-
-            # e = (e + m) % 2^512
-            e = Hash2018.add_mod512(e, m)
-
-        # Финальные преобразования
-        h = Hash2018.gN(h, N, [0] * 64)
-        h = Hash2018.gN(h, e, [0] * 64)
-
-        return h[:32] if is256 else h  # Возвращаем 32 байта для 256-битного хэша или 64 для 512-битного
-
-    @staticmethod
-    def add_mod512(a: list[int], b: list[int]) -> list[int]:
-        assert len(a) == 64 and len(b) == 64, f"Invalid lengths: len(a)={len(a)}, len(b)={len(b)}"
-        result = [0] * 64
-        carry = 0
-
-        for i in reversed(range(64)):
-            temp = a[i] + b[i] + carry
-            result[i] = temp & 0xFF  # Оставляем младший байт
-            carry = temp >> 8  # Перенос в следующий байт
-
-        return result
-"""
-Для проверки размерности c1-c12
-for i, const in enumerate(c):
-    hex_str = hex(const)[2:].zfill(128)  # Убираем '0x' и добавляем ведущие нули
-    print(f"c[{i}]: length={len(hex_str)}, value={hex_str[:20]}...")
-    assert len(hex_str) == 128, f"Invalid length for c[{i}]: {len(hex_str)}"
-"""
+    return h[-hash_size // 8:]

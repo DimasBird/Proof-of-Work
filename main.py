@@ -1,12 +1,9 @@
-import structs
-import hash_function as hsh
+import struct
+from hash_function import streebog
 
-int512 = 2**512
-int256 = 2**256
 
-hash_size = 256
-
-if __name__ == '__main__':
-    result = hsh.Hash2018.hash(b"s"*32, is256=True)
-    print("Hash (256-bit):")
-    print("".join([hex(x)[2:].zfill(2) for x in result]))  # Вывод в шестнадцатеричном формате
+# Example usage
+if __name__ == "__main__":
+    message = b"message digest"
+    print("STREEBOG-512:", streebog(message, 512).hex())
+    print("STREEBOG-256:", streebog(message, 256).hex())
