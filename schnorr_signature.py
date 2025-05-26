@@ -36,10 +36,3 @@ def verify(m:bytes, P:int, R:int, s:int) -> bool:
     e = H(int_to_bytes(R) + int_to_bytes(P) + m)
     print((R * pow(P, e, p)) % p)
     return pow(a, s, p) == (R * pow(P, e, p)) % p
-
-if __name__ == '__main__':
-    x, P = keygen("a")
-    msg = b"dima"
-    R, s = sign(msg, x, P, "a")
-    print("R =", hex(R), "s =", hex(s))
-    print("OK ?", verify(msg, P, R, s))
