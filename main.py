@@ -3,7 +3,7 @@ import struct
 from hash_function import streebog
 from pseudorandom_number_generator import PRNG
 from datetime import datetime
-import schnorr_signature # Здесь можно выбрать конкретные функции
+from schnorr_signature import keygen, sign, int_to_bytes, verify, p
 def create_transactions(string_value, num_transactions=5, size=200):
     generator = PRNG(surname_name, overall_iterations=num_transactions * 7)
     transactions = []
@@ -46,15 +46,24 @@ def create_block_header(transactions, prev_block_hash):
     nonce = 0
     return block_size, prev_hash, merkle_root, timestamp, nonce
 
-# TO DO
-# Генерирует файлы подписи
-def sign_transactions(transactions : list):
-    """
-    Итеративно проходимся по транзакциям (желательно - в списке
-    на входе) и генерируем для каждой транзакции подпись (файл).
-    Возвращаем подписи (см выше def create_transactions() )
-    """
-    return None
+def sign_transactions(transactions: list[bytes], seed: str) -> list[tuple[int, int]]:
+        # 1. Генерация ключей
+        x, P = keygen(seed)
+
+        signatures = []
+        # 2. Цикл подписания
+        for i, msg in enumerate(transactions, start=1):
+            R, s = sign(msg, x, P, seed)
+            signatures.append((R, s))
+
+            # 3. Сохранение подписи в файл
+            data = int_to_bytes(R) + int_to_bytes(s)
+            filename = f"signature_{i}.bin"
+            with open(filename, 'wb') as f:
+                f.write(data)
+            print(f"Подписано: транзакция {i} → {filename}")
+
+        return signatures
 
 def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
     nonce = 0
@@ -82,8 +91,13 @@ if __name__ == "__main__":
     print("Транзакции созданы\n")
 
     # Подписывание транзакций
-    # TO DO
+    signs = sign_transactions(transactions, seed="Medvedev_Daniil")
     print("Транзакции подписаны\n")
+
+    R0, s0 = signs[0]
+    ok = verify(transactions[0], p, R0, s0)
+    print (R0, s0)
+    print("Первая подпись валидна?", ok)
 
     # Создание заголовка блока
     prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
