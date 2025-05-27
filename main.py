@@ -87,6 +87,9 @@ if __name__ == "__main__":
 
     # Создание заголовка блока
     prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
+    # !!!!!! Вместо transactions должно быть слияние
+    # !!!!!! подписей и транзакций:
+    # Грубо говоря: create_block_header(transactions || signs, prev_block_hash)
     block_size, prev_hash, merkle_root, timestamp, nonce = create_block_header(transactions, prev_block_hash)
     print("Заголовок блока создан:")
     print(f"  Размер блока: {block_size.hex()}")
