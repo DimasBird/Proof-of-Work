@@ -3,6 +3,7 @@ import struct
 from hash_function import streebog
 from pseudorandom_number_generator import PRNG
 from datetime import datetime
+import schnorr_signature # Здесь можно выбрать конкретные функции
 def create_transactions(string_value, num_transactions=5, size=200):
     generator = PRNG(surname_name, overall_iterations=num_transactions * 7)
     transactions = []
@@ -45,6 +46,16 @@ def create_block_header(transactions, prev_block_hash):
     nonce = 0
     return block_size, prev_hash, merkle_root, timestamp, nonce
 
+# TO DO
+# Генерирует файлы подписи
+def sign_transactions(transactions : list):
+    """
+    Итеративно проходимся по транзакциям (желательно - в списке
+    на входе) и генерируем для каждой транзакции подпись (файл).
+    Возвращаем подписи (см выше def create_transactions() )
+    """
+    return None
+
 def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
     nonce = 0
     while nonce < 2**32:  # Ограничение 32-битного nonce
@@ -60,18 +71,22 @@ def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
 
 if __name__ == "__main__":
     # ГПСЧ
-    surname_name = "Gutnikov Dmitriy"
+    surname_name = "Medvedev_Daniil"
     generator = PRNG(surname_name, overall_iterations=16)
-    print("Псевдослучайные числа:")
+    """print("Псевдослучайные числа:")
     for i in range(len(generator.numbers)):
-        print(f"{i + 1}) {generator.numbers[i].hex()}")
+        print(f"{i + 1}) {generator.numbers[i].hex()}")"""
 
     # Создание транзакций
     transactions = create_transactions(surname_name)
-    print("Транзакции созданы")
+    print("Транзакции созданы\n")
+
+    # Подписывание транзакций
+    # TO DO
+    print("Транзакции подписаны")
 
     # Создание заголовка блока
-    prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ
+    prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
     block_size, prev_hash, merkle_root, timestamp, nonce = create_block_header(transactions, prev_block_hash)
     print("Заголовок блока создан:")
     print(f"Размер блока: {block_size.hex()}")
