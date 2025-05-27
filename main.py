@@ -3,18 +3,22 @@ import struct
 from hash_function import streebog
 from pseudorandom_number_generator import PRNG
 from datetime import datetime
-def create_transactions(surname_name, num_transactions=5, size=200):
+def create_transactions(string_value, num_transactions=5, size=200):
     generator = PRNG(surname_name, overall_iterations=num_transactions * 7)
     transactions = []
     for i in range(num_transactions):
-        if i == 0:  # Первая транзакция с фамилией и именем
-            data = surname_name.encode('utf-8')
-            data = data[:size] if len(data) > size else data + generator.numbers[i][:size - len(data)]
-        else:  # Остальные заполняются псевдослучайными данными
+        if i == 0:
+            data = string_value[:size] if len(string_value) > size else string_value +\
+                hex(int.from_bytes(b''.join(generator.numbers[i*6:(i+1)*6])[:(size - len(string_value))//2], 'big'))[2:]
+            with open(f'transaction_{i + 1}.bin', 'w') as f:
+                f.write(data)
+            transactions.append(bytearray(data, encoding="utf-8"))
+        else:
             data = b''.join(generator.numbers[i*6:(i+1)*6])[:size]
-        transactions.append(data)
-        with open(f'transaction_{i+1}.bin', 'wb') as f:
-            f.write(data)
+            with open(f'transaction_{i + 1}.bin', 'wb') as f:
+                f.write(data)
+            transactions.append(data)
+
     return transactions
 
 def create_block_header(transactions, prev_block_hash):
@@ -47,7 +51,7 @@ def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
         header = block_size + prev_hash + merkle_root + timestamp_ + nonce.to_bytes(4, 'big')
         hash_result = streebog(header, 256)
 
-        if hash_result[0] == 0 and hash_result[1] == 0:  # Проверка того, что в первый байт будет меньше 8 = 00000111 + 1 <== ПЕРЕДЕЛАТЬ КОММЕНТАРИЙ
+        if hash_result[0] < 8:  # Проверка того, что в первый байт будет меньше 8 = 00000111 + 1
             return nonce, hash_result
         nonce += 1
         if nonce % 100000 == 0:
@@ -56,7 +60,7 @@ def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
 
 if __name__ == "__main__":
     # ГПСЧ
-    surname_name = "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    surname_name = "Gutnikov Dmitriy"
     generator = PRNG(surname_name, overall_iterations=16)
     print("Псевдослучайные числа:")
     for i in range(len(generator.numbers)):
