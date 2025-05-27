@@ -26,12 +26,10 @@ def sign(m:bytes, x:int, P:int,l):
     r = int.from_bytes(generator.generate_numbers()[0],'big') % q
     R = pow(a, r, p)
     e = H(int_to_bytes(R) + int_to_bytes(P) + m)
-    print(e)
     s = (r + e * x) % q
     return R, s
 
 def verify(m:bytes, P:int, R:int, s:int) -> bool:
     e = H(int_to_bytes(R) + int_to_bytes(P) + m)
-    print((R * pow(P, e, p)) % p)
     return pow(a, s, p) == (R * pow(P, e, p)) % p
 
