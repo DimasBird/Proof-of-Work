@@ -83,22 +83,22 @@ if __name__ == "__main__":
 
     # Подписывание транзакций
     # TO DO
-    print("Транзакции подписаны")
+    print("Транзакции подписаны\n")
 
     # Создание заголовка блока
     prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
     block_size, prev_hash, merkle_root, timestamp, nonce = create_block_header(transactions, prev_block_hash)
     print("Заголовок блока создан:")
-    print(f"Размер блока: {block_size.hex()}")
-    print(f"Хэш предыдущего блока: {prev_hash.hex()}")
-    print(f"Хэш корня Меркла: {merkle_root.hex()}")
-    print(f"Метка времени: {timestamp.hex()}")
+    print(f"  Размер блока: {block_size.hex()}")
+    print(f"  Хэш предыдущего блока: {prev_hash.hex()}")
+    print(f"  Хэш корня Меркла: {merkle_root.hex()}")
+    print(f"  Метка времени: {timestamp.hex()}")
 
 
     # Поиск nonce
     try:
         nonce, block_hash = find_nonce(block_size, prev_hash, merkle_root, timestamp)
-        print(f"Найден nonce: {nonce}")
+        print(f"\nНайден nonce: {nonce}")
         print(f"Хэш блока: {block_hash.hex()}")
     except ValueError as e:
         print(e)
