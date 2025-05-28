@@ -110,7 +110,7 @@ if __name__ == "__main__":
     print("\nПервая подпись верна?", ok)
 
     # Создание заголовка блока
-    prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
+    prev_block_hash = generator.h0  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
     combined = combine(transactions, signs) # Объединение транзакций и подписей
     block_size, prev_hash, merkle_root, timestamp = \
         create_block_header(combined, prev_block_hash) # Создание заголовка
