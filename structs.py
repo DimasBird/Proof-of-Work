@@ -7,6 +7,8 @@ class Leaf:
         self.Right = right
         self.Parent = parent
 
+    # Рекурсивный поиск хэша корня дерева
+    # с заполнением на промежуточных точках
     def count_summ(self):
         if self.Left is None and self.Right is None:
             return self.HashValue
@@ -14,6 +16,7 @@ class Leaf:
         right_hash = self.Right.count_summ() if self.Right else left_hash  # Дублирование
         return hsh.streebog(left_hash + right_hash, hash_size=256)
 
+    # Рекурсивная проверка дерева
     def check_summ(self):
         if self.Left is None and self.Right is None:
             return True
@@ -28,11 +31,10 @@ class MerkleTree:
     def __init__(self):
         self.root = None
 
-    def put_hashes(self, hash_list=[]):
-        if not hash_list:
-            return
+    def put_hashes(self, hash_list : list):
         # Создание листьев
         leaves = [Leaf(message=h) for h in hash_list]
+
         # Дублирование последнего хэша, если нечётное число
         if len(hash_list) % 2 == 1:
             leaves.append(Leaf(message=hash_list[-1]))

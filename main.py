@@ -1,16 +1,20 @@
+import os
 from structs import MerkleTree
 import struct
 from hash_function import streebog
 from pseudorandom_number_generator import PRNG
 from datetime import datetime
 from schnorr_signature import keygen, sign, int_to_bytes, verify, p
+
 def create_transactions(string_value, num_transactions=5, size=200):
     generator = PRNG(surname_name, overall_iterations=num_transactions * 7)
     transactions = []
     for i in range(num_transactions):
         if i == 0:
             data = string_value[:size] if len(string_value) > size else string_value +\
-                hex(int.from_bytes(b''.join(generator.numbers[i*6:(i+1)*6])[:(size - len(string_value))//2], 'big'))[2:]
+                hex(int.from_bytes(b''.join(generator.\
+                            numbers[i*6:(i+1)*6])[:(size - len(string_value))//2], 'big'))[2:]
+
             with open(f'transaction_{i + 1}.bin', 'w') as f:
                 f.write(data)
             transactions.append(bytearray(data, encoding="utf-8"))
@@ -19,51 +23,51 @@ def create_transactions(string_value, num_transactions=5, size=200):
             with open(f'transaction_{i + 1}.bin', 'wb') as f:
                 f.write(data)
             transactions.append(data)
+        print(f"  Создано: транзакция {i+1} => transaction_{i+1}.bin")
 
     return transactions
 
 def create_block_header(transactions, prev_block_hash):
     # Метка времени
     now = datetime.now()
-    hour = now.hour  # Например, 0 (00:40)
-    day = now.day  # Например, 23
-    month = now.month  # Например, 5
-    year = now.year % 100  # Например, 2025 -> 25
+    hour = now.hour
+    day = now.day
+    month = now.month
+    year = now.year % 100
     timestamp = struct.pack('BBBB', hour, day, month, year)
 
-    # Размер блока
+    # Размер блока (произвольные ненулевые байты)
     block_size = bytes([1, 2, 3, 4])
 
     # Хэш предыдущего блока
     prev_hash = prev_block_hash
+
     # Хэш корня Меркла
     merkle_tree = MerkleTree()
     transaction_hashes = [streebog(t, 256) for t in transactions]
     merkle_tree.put_hashes(transaction_hashes)
     merkle_root = merkle_tree.count_hash()
 
-    # Начальный nonce
-    nonce = 0
-    return block_size, prev_hash, merkle_root, timestamp, nonce
+    return block_size, prev_hash, merkle_root, timestamp
 
 def sign_transactions(transactions: list[bytes], seed: str) -> list[tuple[int, int]]:
-        # 1. Генерация ключей
+        # Генерация ключей на основании seed
         x, P = keygen(seed)
 
         signatures = []
-        # 2. Цикл подписания
+        # Подписание
         for i, msg in enumerate(transactions, start=1):
             R, s = sign(msg, x, P, seed)
             signatures.append((R, s))
 
-            # 3. Сохранение подписи в файл
+            # Сохранение подписи
             data = int_to_bytes(R) + int_to_bytes(s)
             filename = f"signature_{i}.bin"
             with open(filename, 'wb') as f:
                 f.write(data)
-            print(f"Подписано: транзакция {i} → {filename}")
+            print(f"  Подписано: транзакция {i} => {filename}")
 
-        return signatures
+        return signatures, P
 
 def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
     nonce = 0
@@ -78,39 +82,44 @@ def find_nonce(block_size, prev_hash, merkle_root, timestamp_):
             print(f"Проверено {nonce} nonce...")
     raise ValueError("Не удалось найти nonce")
 
+def combine(transactions : list, signs : list) -> list[bytes]:
+    assert len(transactions) == len(signs)
+
+    combined = []
+    for i in range(len(transactions)):
+        combined.append(transactions[i] + int_to_bytes(signs[i][0]) + int_to_bytes(signs[i][1]))
+    return combined
+
 if __name__ == "__main__":
     # ГПСЧ
-    surname_name = "Medvedev_Daniil"
+    surname_name = "Gutnikov Dmitriy"
     generator = PRNG(surname_name, overall_iterations=16)
-    """print("Псевдослучайные числа:")
-    for i in range(len(generator.numbers)):
-        print(f"{i + 1}) {generator.numbers[i].hex()}")"""
 
     # Создание транзакций
+    print("\nСоздание транзакций")
     transactions = create_transactions(surname_name)
-    print("Транзакции созданы\n")
+
 
     # Подписывание транзакций
-    signs = sign_transactions(transactions, seed="Medvedev_Daniil")
-    print("Транзакции подписаны\n")
+    print("\nПодпись транзакций")
+    signs, P = sign_transactions(transactions, seed="Medvedev_Daniil")
 
+    # Проверка первой подписи
     R0, s0 = signs[0]
-    ok = verify(transactions[0], p, R0, s0)
-    print (R0, s0)
-    print("Первая подпись валидна?", ok)
+    ok = verify(transactions[0], P, R0, s0)
+    print("\nПервая подпись верна?", ok)
 
     # Создание заголовка блока
     prev_block_hash = generator.numbers[0]  # Первое число из ГПСЧ -> симуляция того, что мы в блокчейне
-    # !!!!!! Вместо transactions должно быть слияние
-    # !!!!!! подписей и транзакций:
-    # Грубо говоря: create_block_header(transactions || signs, prev_block_hash)
-    block_size, prev_hash, merkle_root, timestamp, nonce = create_block_header(transactions, prev_block_hash)
-    print("Заголовок блока создан:")
+    combined = combine(transactions, signs) # Объединение транзакций и подписей
+    block_size, prev_hash, merkle_root, timestamp = \
+        create_block_header(combined, prev_block_hash) # Создание заголовка
+
+    print("\nЗаголовок блока создан:")
     print(f"  Размер блока: {block_size.hex()}")
     print(f"  Хэш предыдущего блока: {prev_hash.hex()}")
     print(f"  Хэш корня Меркла: {merkle_root.hex()}")
     print(f"  Метка времени: {timestamp.hex()}")
-
 
     # Поиск nonce
     try:
@@ -119,3 +128,8 @@ if __name__ == "__main__":
         print(f"Хэш блока: {block_hash.hex()}")
     except ValueError as e:
         print(e)
+
+    # Удаление вторичных файлов
+    for i in "12345":
+        os.remove(f"signature_{i}.bin")
+        os.remove(f"transaction_{i}.bin")
